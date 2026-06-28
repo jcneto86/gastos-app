@@ -1,0 +1,43 @@
+{
+  "name": "gastos-app",
+  "version": "1.0.0",
+  "description": "Dashboard de gastos pessoais com CRUD e SQLite",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "nodemon server/index.js",
+    "start": "node server/index.js",
+    "seed": "node server/seed.js",
+    "electron": "electron .",
+    "dist": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.gastos-pessoais.app",
+    "productName": "Gastos Pessoais",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "server/**/*",
+      "client/**/*",
+      "package.json"
+    ],
+    "extraResources": [],
+    "win": {
+      "target": "portable"
+    },
+    "portable": {
+      "artifactName": "Gastos-Pessoais-${version}-Setup.exe"
+    }
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "sql.js": "^1.11.0"
+  },
+  "devDependencies": {
+    "electron": "^42.5.0",
+    "electron-builder": "^26.15.3",
+    "nodemon": "^3.1.0"
+  }
+}
