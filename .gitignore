@@ -172,3 +172,9 @@ docs/_book
 # TODO: where does this rule come from?
 test/
 
+# SQLite database (auto-created)
+gastos.db
+
+# Daily backups
+backups/
+

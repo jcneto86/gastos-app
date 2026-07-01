@@ -22,3 +22,12 @@
 .delay-3 { animation-delay: .15s; }
 .delay-4 { animation-delay: .2s; }
 .delay-5 { animation-delay: .25s; }
+
+/* Dark mode */
+[data-bs-theme="dark"] .category-item:hover { background-color: rgba(255,255,255,.05); }
+[data-bs-theme="dark"] .modal { background-color: rgba(0,0,0,.7); }
+[data-bs-theme="dark"] .table-light { --bs-table-bg: #2b3035; --bs-table-color: #dee2e6; }
+[data-bs-theme="dark"] .stat-card.total { border-left-color: #6ea8fe; }
+[data-bs-theme="dark"] .stat-card.avg { border-left-color: #75b798; }
+[data-bs-theme="dark"] .stat-card.count { border-left-color: #ffda6a; }
+[data-bs-theme="dark"] .stat-card.months { border-left-color: #ea868f; }

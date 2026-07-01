@@ -115,6 +115,30 @@ const DashboardPage = {
         </div>
       </template>
 
+      <!-- Orçamentos -->
+      <div v-if="budgetStatus.length > 0" class="row g-3 mb-4">
+        <div class="col-12">
+          <div class="card shadow-sm animate-in delay-5">
+            <div class="card-body">
+              <h5 class="card-title mb-3">Orçamento vs Gasto ({{ currentMonthLabel }})</h5>
+              <div v-for="b in budgetStatus" :key="b.id" class="mb-2">
+                <div class="d-flex justify-content-between small mb-1">
+                  <span class="fw-semibold">{{ b.category }}</span>
+                  <span :class="b.percent > 100 ? 'text-danger fw-bold' : b.percent > 80 ? 'text-warning fw-bold' : ''">
+                    R$ {{ b.spent.toFixed(2) }} / R$ {{ b.limit_amount.toFixed(2) }} ({{ b.percent }}%)
+                  </span>
+                </div>
+                <div class="progress" style="height:10px">
+                  <div class="progress-bar" :class="b.percent > 100 ? 'bg-danger' : b.percent > 80 ? 'bg-warning' : 'bg-success'"
+                       role="progressbar" :style="{ width: Math.min(b.percent, 100) + '%' }">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div v-else class="text-center py-5">
         <p class="fs-4 text-muted">Nenhum dado encontrado</p>
         <p class="text-muted">Importe dados na página de Gerenciamento ou execute npm run seed</p>
@@ -128,6 +152,7 @@ const DashboardPage = {
     const selectedPeriod = Vue.ref('all');
     const selectedCategory = Vue.ref(null);
     const loading = Vue.ref(true);
+    const budgetStatus = Vue.ref([]);
     const charts = { pie: null, monthly: null, top5: null, daily: null };
 
     const pieChart = Vue.ref(null);
@@ -136,6 +161,11 @@ const DashboardPage = {
     const dailyChart = Vue.ref(null);
 
     const MONTH_NAMES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+    const currentMonthLabel = Vue.computed(() => {
+      const d = new Date();
+      return MONTH_NAMES[d.getMonth()] + '/' + d.getFullYear();
+    });
 
     const availableMonths = Vue.computed(() => {
       const keys = new Set(allMonths.value);
@@ -193,6 +223,13 @@ const DashboardPage = {
 
     function getColor(name) { return ChartHelper.getColor(categories.value, name); }
 
+    async function loadBudgets() {
+      try {
+        const month = new Date().toISOString().slice(0, 7);
+        budgetStatus.value = await API.budgets.status(month);
+      } catch (e) { /* silencioso */ }
+    }
+
     async function loadData() {
       loading.value = true;
       charts.pie = null; charts.monthly = null; charts.top5 = null; charts.daily = null;
@@ -200,6 +237,7 @@ const DashboardPage = {
         const [allTx, cat] = await Promise.all([
           API.transactions.list(),
           API.categories.list(),
+          loadBudgets(),
         ]);
         categories.value = cat;
 
@@ -246,6 +284,7 @@ const DashboardPage = {
       transactions, categories, selectedPeriod, selectedCategory, loading,
       availableMonths, totalSpent, monthCount, avgPerMonth, sortedCategories,
       pieChart, monthlyChart, top5Chart, dailyChart,
+      budgetStatus, currentMonthLabel,
       getColor, loadData, drawAll,
     };
   },

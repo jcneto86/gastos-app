@@ -1,9 +1,11 @@
 const initSqlJs = require('sql.js');
 const path = require('path');
 const fs = require('fs');
+const fsp = require('fs/promises');
 
 const DB_DIR = process.env.GASTOS_DB_PATH || path.join(__dirname, '..');
 const DB_PATH = path.join(DB_DIR, 'gastos.db');
+const BACKUP_DIR = path.join(DB_DIR, 'backups');
 let db = null;
 
 async function initDB() {
@@ -40,21 +42,67 @@ async function initDB() {
     )
   `);
 
+  db.run(`
+    CREATE TABLE IF NOT EXISTS recurring (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      description TEXT NOT NULL,
+      amount REAL NOT NULL,
+      category TEXT NOT NULL,
+      day INTEGER NOT NULL,
+      frequency TEXT DEFAULT 'monthly',
+      active INTEGER DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+
+  db.run(`
+    CREATE TABLE IF NOT EXISTS budgets (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      category TEXT NOT NULL,
+      limit_amount REAL NOT NULL,
+      month TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      UNIQUE(category, month)
+    )
+  `);
+
   db.run(`CREATE INDEX IF NOT EXISTS idx_tx_date ON transactions(date)`);
   db.run(`CREATE INDEX IF NOT EXISTS idx_tx_category ON transactions(category)`);
 
-  saveDB();
+  await saveDB();
+  await backupDB();
 
-  setInterval(saveDB, 5000).unref();
+  setInterval(() => { saveDB(); }, 5000).unref();
+  setInterval(() => { backupDB(); }, 24 * 60 * 60 * 1000).unref();
 
   return db;
 }
 
-function saveDB() {
+async function saveDB() {
   if (!db) return;
   const data = db.export();
   const buffer = Buffer.from(data);
-  fs.writeFileSync(DB_PATH, buffer);
+  await fsp.writeFile(DB_PATH, buffer);
+}
+
+async function backupDB() {
+  if (!db) return;
+  if (!fs.existsSync(BACKUP_DIR)) {
+    fs.mkdirSync(BACKUP_DIR, { recursive: true });
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const backupPath = path.join(BACKUP_DIR, `gastos_${today}.db`);
+
+  try {
+    await fsp.access(backupPath);
+    return;
+  } catch { /* não existe, criar */ }
+
+  const data = db.export();
+  const buffer = Buffer.from(data);
+  await fsp.writeFile(backupPath, buffer);
+  console.log(`Backup criado: ${backupPath}`);
 }
 
 function getDB() {
@@ -80,4 +128,4 @@ function queryOne(sql, params = []) {
   return row;
 }
 
-module.exports = { initDB, getDB, saveDB, queryAll, queryOne };
+module.exports = { initDB, getDB, saveDB, backupDB, queryAll, queryOne };
